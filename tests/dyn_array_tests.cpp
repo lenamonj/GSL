@@ -2,6 +2,7 @@
 
 #include "deathTestCommon.h"
 #include "gsl/dyn_array"
+#include <algorithm>
 #include <cstdlib>
 #include <exception>
 #include <gsl/dyn_array>
@@ -9,6 +10,7 @@
 #include <iostream>
 #include <sstream>
 #include <type_traits>
+#include <utility>
 
 // Despite using <algorithm> and <ranges> utilities in this test, they
 // are not being included directly by this file as a test to ensure
@@ -629,6 +631,39 @@ TEST(dyn_array_tests, random_access_iterator_arithmetic_accepts_negative_offsets
 
     EXPECT_NO_THROW(next = *(third - -1));
     EXPECT_EQ(next, 'd');
+}
+
+TEST(dyn_array_tests, random_access_iterator_comparisons)
+{
+    gsl::dyn_array<char> giants{'c', 'a', 'b'};
+
+    const auto first = giants.begin();
+    const auto last = giants.end();
+
+    EXPECT_TRUE(first < last);
+    EXPECT_TRUE(last > first);
+    EXPECT_TRUE(first <= first);
+    EXPECT_TRUE(first >= first);
+    EXPECT_FALSE(last <= first);
+    EXPECT_EQ(2 + first, last - 1);
+    EXPECT_EQ(*(1 + first), 'a');
+
+    std::sort(giants.begin(), giants.end());
+    EXPECT_EQ(giants[0], 'a');
+    EXPECT_EQ(giants[1], 'b');
+    EXPECT_EQ(giants[2], 'c');
+}
+
+TEST(dyn_array_tests, iterator_member_access_and_default_construction)
+{
+    gsl::dyn_array<std::pair<char, int>> rockies{{'a', 1}, {'b', 2}};
+    EXPECT_EQ(rockies.begin()->second, 1);
+    EXPECT_EQ((rockies.begin() + 1)->first, 'b');
+
+    gsl::dyn_array<int>::iterator it{};
+    gsl::dyn_array<int>::const_iterator cit{};
+    EXPECT_TRUE(it == gsl::dyn_array<int>::iterator{});
+    EXPECT_TRUE(cit == gsl::dyn_array<int>::const_iterator{});
 }
 
 TEST(dyn_array_tests, input_iterator_constructor)
