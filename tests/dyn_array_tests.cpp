@@ -2,7 +2,6 @@
 
 #include "deathTestCommon.h"
 #include "gsl/dyn_array"
-#include <algorithm>
 #include <cstdlib>
 #include <exception>
 #include <gsl/dyn_array>
