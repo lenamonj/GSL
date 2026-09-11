@@ -176,6 +176,9 @@ namespace details
         using reference = T&;
         using const_reference = const T&;
         using iterator_category = std::random_access_iterator_tag;
+#if defined(__cpp_lib_ranges) || (defined(_MSVC_STL_VERSION) && defined(__cpp_lib_concepts))
+        using iterator_concept = std::contiguous_iterator_tag;
+#endif /* __cpp_lib_ranges || (_MSVC_STL_VERSION && __cpp_lib_concepts) */
 
         constexpr dyn_array_iterator() = default;
 
@@ -294,16 +297,7 @@ namespace details
             return gsl::narrow<difference_type>(_pos) - gsl::narrow<difference_type>(other._pos);
         }
 
-        constexpr auto operator[](size_type pos) -> reference
-        {
-            Expects(_pos + pos < _end_pos);
-            return _ptr[_pos + pos];
-        }
-
-        constexpr auto operator[](size_type pos) const -> const_reference
-        {
-            return const_cast<dyn_array_iterator&>(*this).operator[](pos);
-        }
+        constexpr auto operator[](difference_type pos) const -> reference { return *(*this + pos); }
 
     private:
         constexpr dyn_array_iterator(pointer ptr, size_type pos, size_type end_pos)
@@ -321,6 +315,8 @@ namespace details
         friend class dyn_array_iterator;
         template <typename, typename>
         friend class ::gsl::dyn_array;
+        template <typename Ptr>
+        friend struct std::pointer_traits;
     };
 } // namespace details
 
@@ -473,5 +469,18 @@ dyn_array(std::from_range_t, InputRg&&, Alloc = {})
 
 #endif /* __cpp_deduction_guides >= 201703L */
 } // namespace gsl
+
+namespace std
+{
+template <class Type>
+struct pointer_traits<::gsl::details::dyn_array_iterator<Type>>
+{
+    using pointer = ::gsl::details::dyn_array_iterator<Type>;
+    using element_type = Type;
+    using difference_type = ptrdiff_t;
+
+    static constexpr element_type* to_address(const pointer i) noexcept { return i._ptr + i._pos; }
+};
+} // namespace std
 
 #endif /* defined(GSL_DYN_ARRAY_H) */
